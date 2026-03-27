@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VEGA STUDIO</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@700&family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -26,11 +28,11 @@ img{display:block;max-width:100%}
 .cd:hover .play-ic{transform:scale(1.2)}
 
 /* AI WORKFLOW */
-.ai-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:8px}
-@media(max-width:1024px){.ai-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:640px){.ai-grid{grid-template-columns:1fr}}
-.ai-card{background:linear-gradient(145deg,#0e0a00,#100c04,#0a0d14);border:1px solid rgba(212,175,55,.18);border-radius:16px;padding:28px 20px 24px;position:relative;overflow:hidden;transition:transform .3s,border-color .3s;cursor:default}
-.ai-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(212,175,55,.06),transparent 60%);pointer-events:none}
+.ai-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:stretch}
+.ai-grid .ai-card{flex:1;min-width:160px}
+@media(max-width:640px){.ai-grid{flex-direction:column}}
+.ai-card{background:linear-gradient(145deg,#0e0a00,#100c04,#0a0d14);border:1px solid rgba(212,175,55,.18);border-radius:16px;padding:28px 20px 24px;position:relative;overflow:hidden;transition:transform .4s cubic-bezier(.34,1.56,.64,1),box-shadow .4s ease,border-color .3s;cursor:pointer;will-change:transform}
+.ai-card:hover{transform:translateY(-16px) scale(1.05) !important;box-shadow:0 24px 50px rgba(0,0,0,.6),0 0 20px rgba(212,175,55,.12);border-color:rgba(212,175,55,.5);z-index:10}.ai-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(212,175,55,.06),transparent 60%);pointer-events:none}
 .ai-card:hover{transform:translateY(-6px);border-color:rgba(212,175,55,.5)}
 .ai-card:hover .ai-num{opacity:.25}
 .ai-icon{font-size:2.2rem;margin-bottom:12px;filter:drop-shadow(0 0 8px rgba(212,175,55,.4))}
@@ -40,11 +42,22 @@ img{display:block;max-width:100%}
 .ai-tags{display:flex;flex-wrap:wrap;gap:6px}
 .ai-tags span{padding:3px 10px;border:1px solid rgba(212,175,55,.3);color:rgba(212,175,55,.8);font-size:.62rem;letter-spacing:.1em;border-radius:9999px}
 
-/* AI card image */
+/* AI flow arrows */
+@keyframes chevronGlow{
+  0%,100%{opacity:.08;stroke:#b8860b;filter:drop-shadow(0 0 0px transparent)}
+  50%{opacity:1;stroke:#fff7aa;filter:drop-shadow(0 0 6px #f5e27a) drop-shadow(0 0 14px #D4AF37) drop-shadow(0 0 28px rgba(212,175,55,.6))}
+}
+.ai-arrow{display:flex;align-items:center;justify-content:center;flex-shrink:0;gap:-2px}
+.ai-arrow .chv polyline{stroke:#D4AF37}
+.ai-arrow .chv:nth-child(1){animation:chevronGlow 1.8s ease-in-out infinite;animation-delay:0s}
+.ai-arrow .chv:nth-child(2){animation:chevronGlow 1.8s ease-in-out infinite;animation-delay:.35s}
+.ai-arrow .chv:nth-child(3){animation:chevronGlow 1.8s ease-in-out infinite;animation-delay:.7s}
+@media(max-width:1024px){.ai-arrow{transform:rotate(90deg)}}
+@media(max-width:640px){.ai-arrow{transform:rotate(90deg)}}
 .ai-img-wrap{position:relative;width:100%;height:140px;border-radius:10px;overflow:hidden;margin-bottom:16px}
 .ai-img-wrap img,.ai-img-wrap video{width:100%;height:100%;object-fit:cover;object-position:top}
 .ai-img-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,5,0,.7) 0%,transparent 60%)}
-.ai-card{cursor:pointer}
+
 .ai-zoom-bg{position:fixed;inset:0;z-index:499;background:rgba(0,0,0,.5);opacity:0;transition:opacity .3s;pointer-events:none;display:flex;align-items:center;justify-content:center}
 .ai-zoom-bg.show{opacity:1;pointer-events:auto}
 .ai-card-zoom{position:fixed;z-index:500;border-radius:16px;pointer-events:auto;transition:left .35s cubic-bezier(.22,1,.36,1),top .35s cubic-bezier(.22,1,.36,1),width .35s cubic-bezier(.22,1,.36,1);box-shadow:0 0 80px rgba(212,175,55,.35);border:1px solid rgba(212,175,55,.5);background:linear-gradient(145deg,#0e0a00,#100c04,#0a0d14);overflow-y:auto;max-height:88vh;-webkit-overflow-scrolling:touch}
@@ -57,18 +70,23 @@ img{display:block;max-width:100%}
 .ai-card-zoom .ai-img-wrap img,.ai-card-zoom .ai-img-wrap video{height:auto !important;width:100% !important;object-fit:contain !important;object-position:top}
 .ai-zoom-bg{position:fixed;inset:0;z-index:499;background:rgba(0,0,0,.5);opacity:0;transition:opacity .3s;pointer-events:none}
 .ai-zoom-bg.show{opacity:1;pointer-events:auto}
-.sa{opacity:0;will-change:transform,opacity}.sa.run{animation:slideUp .5s cubic-bezier(.22,1,.36,1) forwards}
-.sa-l{opacity:0;will-change:transform,opacity}.sa-l.run{animation:slideLeft .5s cubic-bezier(.22,1,.36,1) forwards}
-.sa-f{opacity:0;will-change:opacity}.sa-f.run{animation:fadeIn .5s ease forwards}
+.sa{}.sa.run{}
+.sa-l{}.sa-l.run{}
+.sa-f{}.sa-f.run{}
 .sa.run.gt{animation:gsh 4s ease infinite,slideUp .5s cubic-bezier(.22,1,.36,1) forwards}
 @keyframes hbg{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 .gt{background:linear-gradient(90deg,var(--gd),var(--g),var(--gl),var(--g),var(--gd));background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gsh 4s ease infinite}
 .cz{font-family:'Cinzel',serif}
 .ns{font-family:'Noto Serif TC',serif}
 .dm{display:inline-block;width:6px;height:6px;background:var(--g);transform:rotate(45deg);flex-shrink:0}
-.cb{clip-path:polygon(0 0,100% 0,100% calc(100% - 30px),0 100%);margin-bottom:-30px}
-.cbo{margin-top:-30px;margin-bottom:-30px;padding-top:30px;padding-bottom:30px}
-.ct{clip-path:polygon(0 30px,100% 0,100% 100%,0 100%);margin-top:-30px;padding-top:40px}
+.cb{margin-bottom:0}
+.cbo{margin-top:0;margin-bottom:0;padding-top:0;padding-bottom:0}
+.ct{margin-top:0;padding-top:80px}
+
+/* Global watermark background */
+#hero::after,#ww::before,#ai-flow::before,#ab::before{display:none}
+#ai-flow{position:relative}
+body{background-color:#080808;background-image:url('./images/BG_01.webp');background-repeat:repeat;background-attachment:fixed;background-size:auto;background-blend-mode:luminosity}
 
 /* NAVBAR */
 #nb{position:fixed;top:0;left:0;right:0;z-index:100;transition:background .4s,border-color .4s;border-bottom:1px solid transparent}
@@ -91,7 +109,7 @@ img{display:block;max-width:100%}
 @media(max-width:768px){.nls{display:none}.nh{display:block}}
 
 /* HERO */
-#hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(135deg,#0a0500,#12080a,#050a12,#0a0500);background-size:400% 400%;animation:hbg 10s ease infinite}
+#hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(135deg,rgba(10,5,0,0.96),rgba(18,8,10,0.96),rgba(5,10,18,0.96),rgba(10,5,0,0.96));background-size:400% 400%;animation:hbg 10s ease infinite}
 #hero canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 .hc{position:relative;z-index:1;text-align:center;padding:0 24px;max-width:900px}
 .hb{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:24px;animation:fu .7s .2s both}
@@ -110,8 +128,8 @@ img{display:block;max-width:100%}
 .st{color:var(--g);font-size:1.5rem}
 
 /* WORKS */
-#ww{background:#0a0a0a}
-#wk{max-width:1280px;margin:0 auto;padding:96px 24px}
+#ww{background:rgba(10,10,10,0.95);position:relative}
+#wk{max-width:1280px;margin:0 auto;padding:96px 24px;overflow:visible}
 .sh2{text-align:center;margin-bottom:56px}
 .sb{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px}
 .sl{height:1px;width:48px}
@@ -121,12 +139,12 @@ img{display:block;max-width:100%}
 .tab:hover{border-color:rgba(212,175,55,.7)}
 .tab.on{background:linear-gradient(135deg,var(--gd),var(--g));color:#000;border-color:var(--g)}
 .wc{text-align:center;color:rgba(212,175,55,.65);font-size:.75rem;letter-spacing:.12em;margin-bottom:28px}
-.gr{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
-.cd{border-radius:12px;overflow:hidden;cursor:pointer;position:relative;animation:fu .45s ease both;transition:transform .3s}
-.cd:hover{transform:translateY(-5px)}
-.cg{position:absolute;inset:0;border-radius:12px;pointer-events:none;z-index:3;box-shadow:inset 0 0 0 1.5px var(--g),0 0 28px 4px rgba(212,175,55,.28);opacity:0;transition:opacity .25s}
+.gr{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;overflow:visible}
+.cd{border-radius:12px;cursor:pointer;position:relative;transform-origin:center center;will-change:transform;transition:transform 1s cubic-bezier(.23,1,.32,1),box-shadow 1s ease}
+.cd-anim{animation:fu .45s ease both}
+.cd:hover{transform:scale(1.15);box-shadow:0 20px 50px rgba(0,0,0,.6),0 0 20px rgba(212,175,55,.15);z-index:10}
+.ci{position:relative;aspect-ratio:8/3;display:flex;align-items:flex-start;justify-content:center;overflow:hidden;border-radius:12px}.cg{position:absolute;inset:0;border-radius:12px;pointer-events:none;z-index:3;box-shadow:inset 0 0 0 1.5px var(--g),0 0 28px 4px rgba(212,175,55,.28);opacity:0;transition:opacity .25s}
 .cd:hover .cg{opacity:1}
-.ci{position:relative;aspect-ratio:8/3;display:flex;align-items:flex-start;justify-content:center;overflow:hidden}
 .cn{position:absolute;inset:0;opacity:.2;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 .ci .cim ~ .cn{display:none}
 .cim{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;opacity:1}
@@ -182,8 +200,8 @@ img{display:block;max-width:100%}
 .mhtp code{color:var(--g)}
 
 /* ABOUT */
-#ab{position:relative;padding:140px 24px;overflow:hidden;background:linear-gradient(135deg,#0a0600,#12080a,#060a12)}
-#ab::before{content:'';position:absolute;inset:0;opacity:.05;background-image:repeating-linear-gradient(45deg,var(--g) 0,var(--g) 1px,transparent 0,transparent 50%);background-size:24px 24px}
+#ab{position:relative;padding:140px 24px;overflow:hidden;background:linear-gradient(135deg,rgba(10,6,0,0.95),rgba(18,8,10,0.95),rgba(6,10,18,0.95))}
+
 .ai{max-width:800px;margin:0 auto;text-align:center;position:relative;z-index:1}
 .av{width:80px;height:80px;border-radius:50%;margin:0 auto 24px;display:flex;align-items:center;justify-content:center;font-size:2.5rem;border:2px solid rgba(212,175,55,.5);background:linear-gradient(135deg,var(--gd),var(--g))}
 .at{font-size:clamp(1.75rem,4vw,2.5rem);font-weight:900;color:#fff;letter-spacing:.15em;margin-bottom:24px}
@@ -302,7 +320,7 @@ footer{background:#000;text-align:center;padding:80px 24px 36px}
 </div>
 
 <!-- AI 工作流程展示 -->
-<section id="ai-flow" style="background:#060606;padding:96px 24px 80px">
+<section id="ai-flow" style="background:rgba(6,6,6,0.95);padding:96px 24px 80px">
   <div style="max-width:1280px;margin:0 auto">
     <div class="sh2">
       <div class="sb sa" data-delay="0">
@@ -321,12 +339,34 @@ footer{background:#000;text-align:center;padding:80px 24px 36px}
         <p class="ai-desc">運用 AI 生成技術結合手工修整，創作高辨識度的遊戲人物角色，涵蓋造型設計、表情差分與多角度呈現。</p>
         <div class="ai-tags"><span>角色設計</span><span>風格一致性</span><span>差分製作</span></div>
       </div>
+      <div class="ai-arrow">
+        <svg class="chv" width="14" height="22" viewBox="0 0 22 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="3,2 19,18 3,34" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg class="chv" width="14" height="22" viewBox="0 0 22 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="3,2 19,18 3,34" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg class="chv" width="14" height="22" viewBox="0 0 22 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="3,2 19,18 3,34" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
       <div class="ai-card" data-delay="50">
         <div class="ai-img-wrap"><img src="./images/ai_02.png" alt="場景設計" onerror="this.parentElement.style.display='none'"><div class="ai-img-overlay"></div></div>
         <div class="ai-num">02</div>
         <h3 class="ai-title">場景設計</h3>
         <p class="ai-desc">以 AI 輔助生成東方宮廷、奢華賭場、神話仙境等多元博弈場景，快速建立具沉浸感的視覺世界觀。</p>
         <div class="ai-tags"><span>環境設計</span><span>氛圍營造</span><span>世界觀構建</span></div>
+      </div>
+      <div class="ai-arrow">
+        <svg class="chv" width="14" height="22" viewBox="0 0 22 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="3,2 19,18 3,34" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg class="chv" width="14" height="22" viewBox="0 0 22 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="3,2 19,18 3,34" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg class="chv" width="14" height="22" viewBox="0 0 22 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="3,2 19,18 3,34" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
       <div class="ai-card" data-delay="100">
         <div class="ai-img-wrap"><img src="./images/ai_03.png" alt="封面氛圍圖" onerror="this.parentElement.style.display='none'"><div class="ai-img-overlay"></div></div>
@@ -335,12 +375,34 @@ footer{background:#000;text-align:center;padding:80px 24px 36px}
         <p class="ai-desc">結合 AI 生圖與品牌設計專業，打造具市場競爭力的封面主視覺與 Logo 識別，兼顧美感與品牌辨識度。</p>
         <div class="ai-tags"><span>主視覺</span><span>品牌識別</span><span>Logo設計</span></div>
       </div>
+      <div class="ai-arrow">
+        <svg class="chv" width="14" height="22" viewBox="0 0 22 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="3,2 19,18 3,34" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg class="chv" width="14" height="22" viewBox="0 0 22 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="3,2 19,18 3,34" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg class="chv" width="14" height="22" viewBox="0 0 22 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="3,2 19,18 3,34" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
       <div class="ai-card" data-delay="150">
         <div class="ai-img-wrap"><img src="./images/ai_04.png" alt="遊戲介面設計" onerror="this.parentElement.style.display='none'"><div class="ai-img-overlay"></div></div>
         <div class="ai-num">04</div>
         <h3 class="ai-title">遊戲介面設計</h3>
         <p class="ai-desc">以 AI 加速 UI 元件原型生成，搭配專業 UI 設計規範，快速產出符合博弈平台需求的高質感遊戲介面。</p>
         <div class="ai-tags"><span>UI設計</span><span>元件系統</span><span>體驗優化</span></div>
+      </div>
+      <div class="ai-arrow">
+        <svg class="chv" width="14" height="22" viewBox="0 0 22 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="3,2 19,18 3,34" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg class="chv" width="14" height="22" viewBox="0 0 22 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="3,2 19,18 3,34" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg class="chv" width="14" height="22" viewBox="0 0 22 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="3,2 19,18 3,34" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
       <div class="ai-card" data-delay="200">
         <div class="ai-img-wrap"><video src="./images/ai_05.mp4" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;object-position:top;transition:transform .5s cubic-bezier(.22,1,.36,1)"></video><div class="ai-img-overlay"></div></div>
@@ -361,8 +423,7 @@ footer{background:#000;text-align:center;padding:80px 24px 36px}
       <div class="sl" style="background:linear-gradient(to left,transparent,var(--g))"></div>
     </div>
     <h2 class="cz at sa" data-delay="60">關於我</h2>
-    <div class="av sa" data-delay="120">🎨</div>
-    <p class="ap sa" data-delay="180">專注博弈視覺設計超過八年，深耕品牌識別、動態視覺與IP角色創作。<br>以東方美學為核心，融合現代科技語彙，為客戶打造具有辨識度與市場競爭力的視覺形象。</p>
+    <p class="ap sa" data-delay="120">專注博弈視覺設計超過八年，深耕品牌識別、動態視覺與IP角色創作。<br>以東方美學為核心，融合現代科技語彙，為客戶打造具有辨識度與市場競爭力的視覺形象。</p>
     <div class="ats sa" data-delay="150">
       <span class="atg">品牌設計</span><span class="atg">動態圖形</span><span class="atg">IP創作</span><span class="atg">活動視覺</span><span class="atg">UI設計</span>
     </div>
@@ -557,6 +618,16 @@ function renderGrid(){
     html+='</div></div>';
   });
   document.getElementById('gridEl').innerHTML=html;
+  document.querySelectorAll('#gridEl .cd').forEach(function(el,i){
+    el.style.opacity='0';
+    el.style.transform='translateY(24px)';
+    el.style.transition='none';
+    setTimeout(function(){
+      el.style.transition='opacity .5s ease, transform .5s cubic-bezier(.23,1,.32,1)';
+      el.style.opacity='1';
+      el.style.transform='translateY(0)';
+    }, i * 60);
+  });
   document.querySelectorAll('.cd').forEach(function(el){
     el.addEventListener('click',function(){openW(parseInt(this.dataset.id));});
   });
@@ -746,34 +817,25 @@ document.addEventListener('keydown',function(e){
   draw();
 })();
 
-/* scroll animations - replay every time */
-(function(){
-  var sections=[
-    {id:'ww', threshold:0.05},
-    {id:'ai-flow', threshold:0.05},
-    {id:'ab', threshold:0.05}
-  ];
-  sections.forEach(function(s){
-    var el=document.getElementById(s.id);
-    if(!el)return;
-    var items=el.querySelectorAll('.sa,.sa-l,.sa-f');
-    var obs=new IntersectionObserver(function(entries){
-      entries.forEach(function(entry){
-        if(entry.isIntersecting){
-          items.forEach(function(item){
-            var delay=parseInt(item.getAttribute('data-delay')||0);
-            item.classList.remove('run');
-            void item.offsetWidth;
-            setTimeout(function(){item.classList.add('run');},delay);
-          });
-        } else {
-          items.forEach(function(item){item.classList.remove('run');});
-        }
-      });
-    },{threshold:s.threshold});
-    obs.observe(el);
-  });
-})();
+/* GSAP ScrollTrigger animations */
+gsap.registerPlugin(ScrollTrigger);
+
+// 作品展示 - 標題由下往上，tabs 由左淡入，格子交錯
+gsap.from('#ww .sh2 .sb', {scrollTrigger:{trigger:'#ww',start:'top 85%',toggleActions:'play reset play reset'},opacity:0,y:20,duration:.6,ease:'power2.out'});
+gsap.from('#ww .st2', {scrollTrigger:{trigger:'#ww',start:'top 85%',toggleActions:'play reset play reset'},opacity:0,y:30,duration:.7,delay:.1,ease:'power3.out'});
+gsap.from('#ww p', {scrollTrigger:{trigger:'#ww',start:'top 85%',toggleActions:'play reset play reset'},opacity:0,y:20,duration:.6,delay:.2,ease:'power2.out'});
+gsap.from('#tabsEl', {scrollTrigger:{trigger:'#ww',start:'top 85%',toggleActions:'play reset play reset'},opacity:0,x:-30,duration:.6,delay:.3,ease:'power2.out'});
+gsap.from('#gridEl', {scrollTrigger:{trigger:'#ww',start:'top 80%',toggleActions:'play reset play reset'},opacity:0,y:40,duration:.8,delay:.4,ease:'power3.out'});
+
+// AI工作流程 - 標題縮放淡入，卡片由下交錯出現
+gsap.from('#ai-flow .sh2', {scrollTrigger:{trigger:'#ai-flow',start:'top 85%',toggleActions:'play reset play reset'},opacity:0,scale:.92,duration:.7,ease:'back.out(1.5)'});
+gsap.from('#ai-flow .ai-card', {scrollTrigger:{trigger:'#ai-flow',start:'top 75%',toggleActions:'play reset play reset'},opacity:0,y:50,duration:.65,stagger:.1,ease:'power3.out'});
+
+// 關於我 - 標題由右淡入，文字由左淡入，標籤由下彈出
+gsap.from('#ab .sb', {scrollTrigger:{trigger:'#ab',start:'top 85%',toggleActions:'play reset play reset'},opacity:0,y:15,duration:.5,ease:'power2.out'});
+gsap.from('#ab .at', {scrollTrigger:{trigger:'#ab',start:'top 85%',toggleActions:'play reset play reset'},opacity:0,x:40,duration:.7,delay:.1,ease:'power3.out'});
+gsap.from('#ab .ap', {scrollTrigger:{trigger:'#ab',start:'top 80%',toggleActions:'play reset play reset'},opacity:0,x:-40,duration:.7,delay:.2,ease:'power3.out'});
+gsap.from('#ab .atg', {scrollTrigger:{trigger:'#ab',start:'top 75%',toggleActions:'play reset play reset'},opacity:0,y:20,duration:.5,stagger:.08,delay:.35,ease:'back.out(2)'});
 
 /* AI card zoom to center on hover */
 (function(){
