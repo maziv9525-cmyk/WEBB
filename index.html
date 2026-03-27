@@ -620,13 +620,15 @@ function renderGrid(){
   document.getElementById('gridEl').innerHTML=html;
   document.querySelectorAll('#gridEl .cd').forEach(function(el,i){
     el.style.opacity='0';
-    el.style.transform='translateY(24px)';
     el.style.transition='none';
     setTimeout(function(){
-      el.style.transition='opacity .5s ease, transform .5s cubic-bezier(.23,1,.32,1)';
+      el.style.transition='opacity .5s ease '+i*60+'ms';
       el.style.opacity='1';
-      el.style.transform='translateY(0)';
-    }, i * 60);
+      setTimeout(function(){
+        el.style.transition='';
+        el.style.opacity='';
+      }, 500 + i*60);
+    }, 20);
   });
   document.querySelectorAll('.cd').forEach(function(el){
     el.addEventListener('click',function(){openW(parseInt(this.dataset.id));});
